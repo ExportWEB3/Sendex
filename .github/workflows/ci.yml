@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, frontend, server]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    if: ${{ github.ref_name != 'frontend' && github.head_ref != 'frontend' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sendex_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sendex_test
+      REDIS_URL: redis://localhost:6379/0
+      TEST_REDIS_URL: redis://localhost:6379/15
+      SECRET_KEY: ci-only-secret-key
+      API_APP_KEY: ci-only-app-key
+      TRACKING_SECRET: ci-only-tracking-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: server/requirements*.txt
+      - name: Install backend dependencies
+        working-directory: server
+        run: pip install -r requirements-dev.txt
+      - name: Lint backend
+        working-directory: server
+        run: ruff check .
+      - name: Test backend
+        working-directory: server
+        run: pytest -q
+
+  frontend:
+    if: ${{ github.ref_name != 'server' && github.head_ref != 'server' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: Frontend
+        run: npm ci
+      - name: Test frontend
+        working-directory: Frontend
+        run: npm test
+      - name: Lint frontend
+        working-directory: Frontend
+        run: npm run lint
+      - name: Build frontend
+        working-directory: Frontend
+        env:
+          VITE_API_KEY: ci-only-app-key
+        run: npm run build
