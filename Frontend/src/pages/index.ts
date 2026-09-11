@@ -1,0 +1,13 @@
+export { Dashboard } from './Dashboard';
+export { Inboxes } from './Inboxes';
+export { Campaigns } from './Campaigns';
+export { Lists } from './Lists';
+export { Queue } from './Queue';
+export { SmtpAccounts } from './SmtpAccounts';
+export { Settings } from './Settings';
+export { RepliesResend } from './RepliesResend';
+export { RepliesSMTP } from './RepliesSMTP';
+export { Login } from './Login';
+export { Register } from './Register';
+export { ForgotPassword } from './ForgotPassword';
+export { default as Templates } from './Templates';
