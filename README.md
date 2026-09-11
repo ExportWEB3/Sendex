@@ -1,5 +1,7 @@
 # Sendex
 
+[![CI](https://github.com/ExportWEB3/Sendex/actions/workflows/ci.yml/badge.svg)](https://github.com/ExportWEB3/Sendex/actions/workflows/ci.yml)
+
 **Production-tested email operations platform for orchestrating campaigns, sender health, and delivery workflows.**
 
 > Operational milestone: the deployed system has processed more than **12,000 emails** while evolving through real campaign, deliverability, and multi-tenant requirements.
