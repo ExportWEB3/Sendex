@@ -1,0 +1,14 @@
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = ["venv", ".venv", "uploads", "uploads_prod", "testruns"]
+
+[tool.ruff.lint]
+# Runtime-safety baseline. Expand incrementally as the legacy lint backlog is paid down.
+select = ["E9", "F63", "F7", "F82"]
+ignore = ["E501"]
