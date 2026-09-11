@@ -1,0 +1,27 @@
+# API and validation
+fastapi==0.128.0
+pydantic==2.12.5
+email-validator==2.3.0
+python-multipart==0.0.21
+uvicorn==0.40.0
+
+# Persistence and queues
+psycopg2-binary==2.9.11
+redis==7.1.0
+SQLAlchemy==2.0.45
+
+# Configuration and networking
+dnspython==2.8.0
+httpx==0.28.1
+python-dotenv==1.2.1
+requests==2.32.5
+tzdata==2026.3
+
+# Sending and AI providers
+google-genai==2.18.1
+resend==2.36.0
+
+# Import and document processing
+openpyxl==3.1.5
+pdfminer.six==20260107
+pypdf==6.16.2
