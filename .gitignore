@@ -1,0 +1,87 @@
+# Environment and secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.*.example
+!**/.env.example
+!**/.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+server/.brevo_key
+
+# Python bytecode, environments, and tooling
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+/env/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Node and frontend output
+Frontend/node_modules/
+Frontend/dist/
+Frontend/dist-ssr/
+Frontend/coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data and private backups
+backups/
+server/uploads/
+server/uploads_prod/
+server/testruns/
+**/.assistant-staging/
+*.dump
+*.rdb
+/sample_bundle.zip
+
+# Logs, process files, and temporary output
+*.log
+*.pid
+*.pid.lock
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+/tmp/
+/run-config.json
+
+# Editors and local agents
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.claude/
+
+# Operating systems
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
