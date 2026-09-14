@@ -63,4 +63,29 @@ describe('useApiQuery', () => {
     expect(result.current.fetchIsLoading).toBe(false);
     expect(requestSpy).not.toHaveBeenCalled();
   });
+
+  it('loads and combines every page of an offset-based collection', async () => {
+    const requestSpy = vi.spyOn(httpClient, 'request')
+      .mockResolvedValueOnce(response([{ id: 1 }, { id: 2 }]))
+      .mockResolvedValueOnce(response([{ id: 3 }]));
+    const { result } = renderHook(() => useApiQuery<Array<{ id: number }>>({
+      cacheKey: 'pilot:all-pages',
+      endpoint: '/lists/',
+      auth: 'none',
+      query: { active: true },
+      pagination: { offsetParameter: 'skip', pageSize: 2 },
+    }), { wrapper: IsolatedSWR });
+
+    await waitFor(() => {
+      expect(result.current.fetchData).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    });
+    expect(requestSpy).toHaveBeenCalledTimes(2);
+
+    const firstParams = requestSpy.mock.calls[0]?.[0].params as URLSearchParams;
+    const secondParams = requestSpy.mock.calls[1]?.[0].params as URLSearchParams;
+    expect(firstParams.get('active')).toBe('true');
+    expect(firstParams.get('limit')).toBe('2');
+    expect(firstParams.get('skip')).toBe('0');
+    expect(secondParams.get('skip')).toBe('2');
+  });
 });
