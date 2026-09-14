@@ -39,11 +39,11 @@ export function Lists() {
   const handleAddRecipients = page.actions.addRecipients;
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen">
+    <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden">
       <Header title="Recipient Lists" onRefresh={loadData} lastUpdated={lastUpdated} />
       
       {initialLoad ? <ListsSkeleton /> : (
-      <div className={`p-4 sm:p-6 flex-1 transition-opacity duration-200 ${loading ? 'opacity-60' : ''}`}>
+      <div className={`min-w-0 flex-1 p-4 transition-opacity duration-200 sm:p-6 ${loading ? 'opacity-60' : ''}`}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <p className="text-gray-600">Manage recipient lists and contacts</p>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -86,7 +86,7 @@ export function Lists() {
         )}
 
         {/* Cards for all screens */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {lists.length === 0 ? (
             <div className="col-span-full bg-white rounded-xl shadow p-8 text-center text-gray-500">
               No lists yet. Create one to get started!
@@ -136,7 +136,7 @@ export function Lists() {
           <div className="text-xs text-gray-500">{recipientsTotal} total recipients{recipientSearch ? ` (${filteredRecipients.length} shown)` : ''}</div>
 
           {/* Table */}
-          <div className="max-h-[400px] overflow-y-auto border rounded-lg">
+          <div className="max-h-100 overflow-y-auto border rounded-lg">
             {recipientsLoading ? (
               <div className="p-8 text-center text-gray-400">Loading...</div>
             ) : filteredRecipients.length === 0 ? (
