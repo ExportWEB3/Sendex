@@ -46,6 +46,7 @@ export function useDashboardPage(): DashboardPageController {
   const campaignsQuery = useApiQuery<Campaign[]>({
     cacheKey: CACHE_KEYS.CAMPAIGN_LIST,
     endpoint: 'campaigns',
+    pagination: { offsetParameter: 'offset', pageSize: 100 },
     fallbackData: hasCachedData(CACHE_KEYS.CAMPAIGN_LIST) ? cachedCampaigns : undefined,
     refreshInterval: DASHBOARD_REFRESH_INTERVAL,
     onSuccess: (campaigns) => {
@@ -56,6 +57,7 @@ export function useDashboardPage(): DashboardPageController {
   const listsQuery = useApiQuery<RecipientList[]>({
     cacheKey: CACHE_KEYS.LIST_LIST,
     endpoint: 'lists/',
+    pagination: { offsetParameter: 'skip', pageSize: 100 },
     fallbackData: hasCachedData(CACHE_KEYS.LIST_LIST) ? cachedLists : undefined,
     refreshInterval: DASHBOARD_REFRESH_INTERVAL,
     onSuccess: (lists) => {

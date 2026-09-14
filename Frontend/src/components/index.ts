@@ -9,6 +9,7 @@ export { StatusBadge } from './StatusBadge';
 export { NotificationBell } from './NotificationBell';
 export { ListCard } from './ListCard';
 export { SelectionBar } from './SelectionBar';
+export { PageSearch } from './PageSearch';
 export { CampaignForm } from './CampaignForm';
 export { formatFileSize, getFileIcon, isImageType } from './attachment-utils';
 export type { CampaignFormProps, AttachmentMeta, TemplateOption } from '../../typefiles';

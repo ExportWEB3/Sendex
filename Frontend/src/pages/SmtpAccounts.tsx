@@ -1,4 +1,4 @@
-import { Header, Modal, StatusBadge, SmtpAccountsSkeleton, SelectionBar } from '../components';
+import { Header, Modal, StatusBadge, SmtpAccountsSkeleton, PageSearch, SelectionBar } from '../components';
 import { Plus, Zap, Trash2, Pencil, Mail, MailX, Search, CheckCircle, Cloud, Server, Eye, EyeOff, ListChecks, Loader2, AlertTriangle } from 'lucide-react';
 import { useSmtpAccountsPage } from '../features/smtp/useSmtpAccountsPage';
 import type {
@@ -8,7 +8,7 @@ import type {
 
 export function SmtpAccounts() {
   const page = useSmtpAccountsPage();
-  const { accounts, resendConfig, readyAccounts } = page.data;
+  const { accounts, visibleAccounts, resendConfig, readyAccounts } = page.data;
   const { loading, initialLoad, lastUpdated } = page.status;
   const {
     createOpen: showModal,
@@ -341,10 +341,19 @@ export function SmtpAccounts() {
           </div>
         )}
 
+        <PageSearch
+          value={page.search.value}
+          onChange={page.search.setValue}
+          placeholder="Search sending accounts..."
+          label="Search sending accounts"
+          resultCount={page.search.resultCount}
+          totalCount={page.search.totalCount}
+        />
+
         {selectMode && (
           <SelectionBar
             count={selectedIds.size}
-            total={accounts.length}
+            total={visibleAccounts.length}
             onSelectAll={handleSelectAll}
             onDelete={handleBulkDelete}
             onCancel={toggleSelectMode}
@@ -358,8 +367,12 @@ export function SmtpAccounts() {
             <div className="col-span-full bg-white rounded-xl shadow p-8 text-center text-gray-500">
               No accounts yet. Add an SMTP server or Resend account to get started!
             </div>
+          ) : visibleAccounts.length === 0 ? (
+            <div className="col-span-full border border-gray-200 bg-white p-8 text-center text-gray-500">
+              No sending accounts match your search.
+            </div>
           ) : (
-            accounts.map(account => {
+            visibleAccounts.map(account => {
               const status = getSmtpStatus(account);
               const isLegacyApi = account.provider_type === 'ses_api';
               const isResendRecord = account.provider_type === 'brevo';

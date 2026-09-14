@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import { showToast } from '../components/toast-store';
-import { getErrorMessage, toApiError } from '../http/api-error';
+import { ApiError, getErrorMessage, toApiError } from '../http/api-error';
 import { request } from '../http/client';
 import type { ApiQueryOptions } from '../../typefiles';
 
@@ -10,6 +10,7 @@ export function useApiQuery<TResponse>(options: ApiQueryOptions<TResponse>) {
     cacheKey,
     endpoint,
     query,
+    pagination,
     headers,
     auth,
     responseType,
@@ -29,23 +30,50 @@ export function useApiQuery<TResponse>(options: ApiQueryOptions<TResponse>) {
   const lastNotifiedErrorRef = useRef<unknown>(null);
 
   const swrKey = enabled
-    ? { cacheKey, endpoint, query: query ?? null }
+    ? { cacheKey, endpoint, query: query ?? null, pagination: pagination ?? null }
     : null;
 
   const result = useSWR<TResponse, unknown>(
     swrKey,
-    () => request<TResponse>({
-      endpoint,
-      method: 'get',
-      query,
-      headers,
-      auth,
-      responseType,
-      signal,
-      timeoutMs,
-      retry,
-      withCredentials,
-    }),
+    async () => {
+      const requestPage = <T,>(pageQuery = query) => request<T>({
+        endpoint,
+        method: 'get',
+        query: pageQuery,
+        headers,
+        auth,
+        responseType,
+        signal,
+        timeoutMs,
+        retry,
+        withCredentials,
+      });
+
+      if (!pagination) return requestPage<TResponse>();
+
+      const pageSize = Math.max(1, Math.floor(pagination.pageSize ?? 100));
+      const maxPages = Math.max(1, Math.floor(pagination.maxPages ?? 100));
+      const items: unknown[] = [];
+
+      for (let pageNumber = 0; pageNumber < maxPages; pageNumber += 1) {
+        const page = await requestPage<unknown[]>({
+          ...query,
+          limit: pageSize,
+          [pagination.offsetParameter]: pageNumber * pageSize,
+        });
+        if (!Array.isArray(page)) {
+          throw new ApiError('Expected a list response while loading all pages', {
+            code: 'INVALID_PAGINATED_RESPONSE',
+          });
+        }
+        items.push(...page);
+        if (page.length < pageSize) return items as TResponse;
+      }
+
+      throw new ApiError(`Stopped after loading ${maxPages} pages`, {
+        code: 'PAGINATION_LIMIT_REACHED',
+      });
+    },
     {
       refreshInterval,
       fallbackData,

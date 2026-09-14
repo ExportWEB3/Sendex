@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from 'react';
+import { useCallback, useMemo, useReducer, useState } from 'react';
 import { CACHE_KEYS } from '../../cache';
 import { showToast } from '../../components/toast-store';
 import { useConfirm } from '../../components/useConfirm';
@@ -7,6 +7,7 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { useBulkSelection } from '../../hooks/useBulkSelection';
 import { useHttpFetcher } from '../../hooks/useHttpFetcher';
 import { bulkDeleteWithFallback } from '../../utils/bulk-delete';
+import { matchesPageSearch } from '../../utils/page-search';
 import { getCachedInitial, hasCachedData, saveToCache } from '../../initial-cache';
 import type {
   ImapDetectionResponse,
@@ -145,6 +146,7 @@ export function useSmtpAccountsPage(): SMTPAccountsPageController {
   const [lastUpdated, markUpdated] = useReducer(() => new Date(), null as Date | null);
   const [editor, dispatchEditor] = useReducer(editorReducer, INITIAL_EDITOR_STATE);
   const [testing, dispatchTesting] = useReducer(testingReducer, INITIAL_TESTING_STATE);
+  const [accountSearch, setAccountSearch] = useState('');
 
   const accountsQuery = useApiQuery<SMTPAccount[]>({
     cacheKey: CACHE_KEYS.SMTP_LIST,
@@ -168,8 +170,30 @@ export function useSmtpAccountsPage(): SMTPAccountsPageController {
     () => accounts.filter((account) => getSmtpStatus(account) === 'ready'),
     [accounts],
   );
-  const accountIds = useMemo(() => accounts.map(({ id }) => id), [accounts]);
+  const visibleAccounts = useMemo(
+    () => accounts.filter((account) => matchesPageSearch(accountSearch, [
+      account.name,
+      account.from_email,
+      account.from_name,
+      account.host,
+      account.username,
+      account.provider_type,
+      account.auth_type,
+      getSmtpStatus(account),
+      account.has_imap ? 'imap' : null,
+    ])),
+    [accountSearch, accounts],
+  );
+  const accountIds = useMemo(
+    () => visibleAccounts.map(({ id }) => id),
+    [visibleAccounts],
+  );
   const selection = useBulkSelection(accountIds);
+  const resetSelection = selection.reset;
+  const updateAccountSearch = useCallback((value: string) => {
+    setAccountSearch(value);
+    resetSelection();
+  }, [resetSelection]);
 
   const mutateAccounts = accountsQuery.mutate;
   const mutateConfig = configQuery.mutate;
@@ -494,7 +518,7 @@ export function useSmtpAccountsPage(): SMTPAccountsPageController {
   }, [editor.editAuthType, editor.editingAccount, fetchIt, refresh]);
 
   return {
-    data: { accounts, resendConfig, readyAccounts },
+    data: { accounts, visibleAccounts, resendConfig, readyAccounts },
     status: {
       loading: accountsQuery.isValidating || configQuery.isValidating,
       initialLoad: !hadCache && accountsQuery.isLoading,
@@ -523,6 +547,12 @@ export function useSmtpAccountsPage(): SMTPAccountsPageController {
       toggleImapPassword: () => dispatchEditor({ type: 'secret-toggled', secret: 'imap' }),
     },
     testing,
+    search: {
+      value: accountSearch,
+      resultCount: visibleAccounts.length,
+      totalCount: accounts.length,
+      setValue: updateAccountSearch,
+    },
     selection,
     actions: {
       refresh,

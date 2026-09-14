@@ -249,9 +249,16 @@ export interface HttpFetcherOptions<TBody = unknown, TResponse = unknown>
   errorNotification?: RequestNotificationOptions<unknown>;
 }
 
+export interface ApiQueryPagination {
+  offsetParameter: 'offset' | 'skip';
+  pageSize?: number;
+  maxPages?: number;
+}
+
 export interface ApiQueryOptions<TResponse = unknown>
   extends Omit<HttpRequestOptions<never>, 'data' | 'method'> {
   cacheKey: string | readonly unknown[];
+  pagination?: ApiQueryPagination;
   enabled?: boolean;
   fallbackData?: TResponse;
   refreshInterval?: number | ((latestData: TResponse | undefined) => number);
@@ -804,6 +811,13 @@ export interface BulkSelectionController extends BulkSelectionState {
   reset: () => void;
 }
 
+export interface PageSearchController {
+  value: string;
+  resultCount: number;
+  totalCount: number;
+  setValue: (value: string) => void;
+}
+
 export interface CampaignEditorState {
   isOpen: boolean;
   editingCampaign: Campaign | null;
@@ -881,6 +895,7 @@ export type CampaignOperationsAction =
 
 export interface CampaignPageData {
   campaigns: Campaign[];
+  visibleCampaigns: Campaign[];
   lists: RecipientList[];
   inboxes: Inbox[];
   smtpAccounts: SMTPAccount[];
@@ -950,6 +965,7 @@ export interface CampaignPageActions {
 export interface CampaignsPageController {
   data: CampaignPageData;
   status: CampaignPageStatus;
+  search: PageSearchController;
   editor: CampaignEditorController;
   recipients: CampaignRecipientsController;
   selection: BulkSelectionController;
@@ -1050,6 +1066,7 @@ export type ListsWorkflowAction =
 export interface ListsPageController {
   data: {
     lists: RecipientList[];
+    visibleLists: RecipientList[];
   };
   status: {
     loading: boolean;
@@ -1077,6 +1094,7 @@ export interface ListsPageController {
     changePage: (page: number) => void;
     setSearch: (search: string) => void;
   };
+  search: PageSearchController;
   selection: BulkSelectionController;
   actions: {
     refresh: () => Promise<void>;
@@ -1117,6 +1135,7 @@ export type TemplateEditorAction =
 export interface TemplatesPageController {
   data: {
     templates: EmailTemplate[];
+    visibleTemplates: EmailTemplate[];
   };
   status: {
     loading: boolean;
@@ -1137,6 +1156,7 @@ export interface TemplatesPageController {
     show: (html: string) => void;
     close: () => void;
   };
+  search: PageSearchController;
   selection: BulkSelectionController;
   actions: {
     refresh: () => Promise<void>;
@@ -1188,6 +1208,7 @@ export type SMTPAccountsTestingAction =
 export interface SMTPAccountsPageController {
   data: {
     accounts: SMTPAccount[];
+    visibleAccounts: SMTPAccount[];
     resendConfig: ResendConfig | null;
     readyAccounts: SMTPAccount[];
   };
@@ -1210,6 +1231,7 @@ export interface SMTPAccountsPageController {
     toggleImapPassword: () => void;
   };
   testing: SMTPAccountsTestingState;
+  search: PageSearchController;
   selection: BulkSelectionController;
   actions: {
     refresh: () => Promise<void>;
