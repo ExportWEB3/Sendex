@@ -416,7 +416,10 @@ def list_campaigns(
     if status_enum:
         query = query.filter(Campaign.status == status_enum)
     
-    campaigns = query.order_by(Campaign.created_at.desc()).limit(limit).offset(offset).all()
+    campaigns = query.order_by(
+        Campaign.created_at.desc(),
+        Campaign.id.desc(),
+    ).limit(limit).offset(offset).all()
 
     worker_status_map = _load_worker_status_map(
         email_queue.redis,
