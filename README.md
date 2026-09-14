@@ -98,7 +98,7 @@ npm run lint
 npm run build
 ```
 
-Current verified baseline: **125 backend tests** and **14 frontend tests**, plus clean lint and production builds.
+Current verified baseline: **125 backend tests** and **17 frontend tests**, plus clean lint and production builds.
 
 ## Responsible use
 
