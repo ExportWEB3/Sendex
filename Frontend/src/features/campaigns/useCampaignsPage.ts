@@ -4,6 +4,7 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from 'react';
 import { showToast } from '../../components/toast-store';
 import { useConfirm } from '../../components/useConfirm';
@@ -13,6 +14,7 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { useBulkSelection } from '../../hooks/useBulkSelection';
 import { useHttpFetcher } from '../../hooks/useHttpFetcher';
 import { bulkDeleteWithFallback } from '../../utils/bulk-delete';
+import { matchesPageSearch } from '../../utils/page-search';
 import { getCachedInitial, hasCachedData, saveToCache } from '../../initial-cache';
 import {
   campaignActivityReducer,
@@ -106,6 +108,7 @@ export function useCampaignsPage(): CampaignsPageController {
   );
   const hadCampaignCache = useMemo(() => hasCachedData(CACHE_KEYS.CAMPAIGN_LIST), []);
   const [lastUpdated, markUpdated] = useReducer(() => new Date(), null as Date | null);
+  const [campaignSearch, setCampaignSearch] = useState('');
 
   const cacheCampaigns = useCallback((campaigns: Campaign[]) => {
     saveToCache(CACHE_KEYS.CAMPAIGN_LIST, campaigns);
@@ -127,6 +130,7 @@ export function useCampaignsPage(): CampaignsPageController {
   const campaignsQuery = useApiQuery<Campaign[]>({
     cacheKey: CACHE_KEYS.CAMPAIGN_LIST,
     endpoint: 'campaigns',
+    pagination: { offsetParameter: 'offset', pageSize: 100 },
     fallbackData: hadCampaignCache ? cachedCampaigns : undefined,
     refreshInterval: (latestCampaigns) => (
       latestCampaigns?.some((campaign) => (
@@ -143,6 +147,7 @@ export function useCampaignsPage(): CampaignsPageController {
   const listsQuery = useApiQuery<RecipientList[]>({
     cacheKey: CACHE_KEYS.LIST_LIST,
     endpoint: 'lists/',
+    pagination: { offsetParameter: 'skip', pageSize: 100 },
     fallbackData: hasCachedData(CACHE_KEYS.LIST_LIST) ? cachedLists : undefined,
     onSuccess: cacheLists,
   });
@@ -161,6 +166,7 @@ export function useCampaignsPage(): CampaignsPageController {
   const templatesQuery = useApiQuery<EmailTemplate[]>({
     cacheKey: CACHE_KEYS.TEMPLATES,
     endpoint: 'email-templates',
+    pagination: { offsetParameter: 'offset', pageSize: 100 },
     onSuccess: (loadedTemplates) => saveToCache(CACHE_KEYS.TEMPLATES, loadedTemplates),
   });
 
@@ -226,8 +232,28 @@ export function useCampaignsPage(): CampaignsPageController {
     INITIAL_CAMPAIGN_OPERATIONS_STATE,
   );
 
-  const campaignIds = useMemo(() => campaigns.map((campaign) => campaign.id), [campaigns]);
+  const visibleCampaigns = useMemo(
+    () => campaigns.filter((campaign) => matchesPageSearch(campaignSearch, [
+      campaign.name,
+      campaign.subject,
+      campaign.status,
+      campaign.effective_status,
+      campaign.reply_to_email,
+      campaign.send_timezone,
+      ...Object.values(campaign.inbox_emails ?? {}),
+    ])),
+    [campaignSearch, campaigns],
+  );
+  const campaignIds = useMemo(
+    () => visibleCampaigns.map((campaign) => campaign.id),
+    [visibleCampaigns],
+  );
   const selection = useBulkSelection(campaignIds);
+  const resetSelection = selection.reset;
+  const updateCampaignSearch = useCallback((value: string) => {
+    setCampaignSearch(value);
+    resetSelection();
+  }, [resetSelection]);
 
   const terminalElementsRef = useRef<Record<number, HTMLDivElement | null>>({});
   const terminalIntervalsRef = useRef<Record<number, ReturnType<typeof setInterval>>>({});
@@ -689,13 +715,19 @@ export function useCampaignsPage(): CampaignsPageController {
     || templatesQuery.isValidating;
 
   return {
-    data: { campaigns, lists, inboxes, smtpAccounts, templates },
+    data: { campaigns, visibleCampaigns, lists, inboxes, smtpAccounts, templates },
     status: {
       loading,
       initialLoad: !hadCampaignCache && campaignsQuery.isLoading,
       lastUpdated,
       startingAll: operationsState.startingAll,
       pausingAll: operationsState.pausingAll,
+    },
+    search: {
+      value: campaignSearch,
+      resultCount: visibleCampaigns.length,
+      totalCount: campaigns.length,
+      setValue: updateCampaignSearch,
     },
     editor: {
       ...editorState,

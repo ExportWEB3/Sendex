@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from 'react';
+import { useCallback, useMemo, useReducer, useState } from 'react';
 import { CACHE_KEYS } from '../../cache';
 import { showToast } from '../../components/toast-store';
 import { useConfirm } from '../../components/useConfirm';
@@ -7,6 +7,7 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { useBulkSelection } from '../../hooks/useBulkSelection';
 import { useHttpFetcher } from '../../hooks/useHttpFetcher';
 import { bulkDeleteWithFallback } from '../../utils/bulk-delete';
+import { matchesPageSearch } from '../../utils/page-search';
 import { getCachedInitial, hasCachedData, saveToCache } from '../../initial-cache';
 import type {
   AddRecipientInput,
@@ -101,10 +102,12 @@ export function useListsPage(): ListsPageController {
   );
   const [lastUpdated, markUpdated] = useReducer(() => new Date(), null as Date | null);
   const [workflow, dispatch] = useReducer(listsWorkflowReducer, INITIAL_WORKFLOW_STATE);
+  const [listSearch, setListSearch] = useState('');
 
   const listsQuery = useApiQuery<RecipientList[]>({
     cacheKey: CACHE_KEYS.LIST_LIST,
     endpoint: 'lists/',
+    pagination: { offsetParameter: 'skip', pageSize: 100 },
     fallbackData: hadCache ? cachedLists : undefined,
     onSuccess: (lists) => {
       saveToCache(CACHE_KEYS.LIST_LIST, lists);
@@ -118,8 +121,22 @@ export function useListsPage(): ListsPageController {
     await mutateLists();
   }, [mutateLists]);
 
-  const listIds = useMemo(() => lists.map(({ id }) => id), [lists]);
+  const visibleLists = useMemo(
+    () => lists.filter((list) => matchesPageSearch(listSearch, [
+      list.name,
+      list.description,
+      list.recipient_count,
+      list.is_active ? 'active' : 'inactive',
+    ])),
+    [listSearch, lists],
+  );
+  const listIds = useMemo(() => visibleLists.map(({ id }) => id), [visibleLists]);
   const selection = useBulkSelection(listIds);
+  const resetSelection = selection.reset;
+  const updateListSearch = useCallback((value: string) => {
+    setListSearch(value);
+    resetSelection();
+  }, [resetSelection]);
 
   const loadRecipients = useCallback(async (listId: number, page: number) => {
     dispatch({ type: 'recipients-load-started' });
@@ -291,7 +308,7 @@ export function useListsPage(): ListsPageController {
   }, [workflow.recipientSearch, workflow.recipients]);
 
   return {
-    data: { lists },
+    data: { lists, visibleLists },
     status: {
       loading: listsQuery.isValidating,
       initialLoad: !hadCache && listsQuery.isLoading,
@@ -317,6 +334,12 @@ export function useListsPage(): ListsPageController {
       close: () => dispatch({ type: 'recipients-closed' }),
       changePage,
       setSearch: (search) => dispatch({ type: 'recipient-search-changed', search }),
+    },
+    search: {
+      value: listSearch,
+      resultCount: visibleLists.length,
+      totalCount: lists.length,
+      setValue: updateListSearch,
     },
     selection,
     actions: {

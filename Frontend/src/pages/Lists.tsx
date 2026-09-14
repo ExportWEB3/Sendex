@@ -1,10 +1,10 @@
-import { Header, Modal, ListsSkeleton, ListCard, SelectionBar } from '../components';
+import { Header, Modal, ListsSkeleton, ListCard, PageSearch, SelectionBar } from '../components';
 import { Plus, ChevronLeft, ChevronRight, Search, X, ListChecks } from 'lucide-react';
 import { useListsPage } from '../features/lists/useListsPage';
 
 export function Lists() {
   const page = useListsPage();
-  const { lists } = page.data;
+  const { lists, visibleLists } = page.data;
   const { loading, initialLoad, lastUpdated } = page.status;
   const {
     createOpen: showModal,
@@ -64,10 +64,19 @@ export function Lists() {
           </div>
         </div>
 
+        <PageSearch
+          value={page.search.value}
+          onChange={page.search.setValue}
+          placeholder="Search lists by name or description..."
+          label="Search recipient lists"
+          resultCount={page.search.resultCount}
+          totalCount={page.search.totalCount}
+        />
+
         {selectMode && (
           <SelectionBar
             count={selectedIds.size}
-            total={lists.length}
+            total={visibleLists.length}
             onSelectAll={handleSelectAll}
             onDelete={handleBulkDelete}
             onCancel={toggleSelectMode}
@@ -82,8 +91,12 @@ export function Lists() {
             <div className="col-span-full bg-white rounded-xl shadow p-8 text-center text-gray-500">
               No lists yet. Create one to get started!
             </div>
+          ) : visibleLists.length === 0 ? (
+            <div className="col-span-full border border-gray-200 bg-white p-8 text-center text-gray-500">
+              No lists match your search.
+            </div>
           ) : (
-            lists.map(list => (
+            visibleLists.map(list => (
               <ListCard
                 key={list.id}
                 list={list}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from 'react';
+import { useCallback, useMemo, useReducer, useState } from 'react';
 import { CACHE_KEYS } from '../../cache';
 import { showToast } from '../../components/toast-store';
 import { useConfirm } from '../../components/useConfirm';
@@ -6,6 +6,7 @@ import { getErrorMessage } from '../../http/api-error';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useBulkSelection } from '../../hooks/useBulkSelection';
 import { useHttpFetcher } from '../../hooks/useHttpFetcher';
+import { matchesPageSearch } from '../../utils/page-search';
 import { getCachedInitial, hasCachedData, saveToCache } from '../../initial-cache';
 import type {
   AttachmentUploadResponse,
@@ -129,10 +130,12 @@ export function useTemplatesPage(): TemplatesPageController {
   );
   const [lastUpdated, markUpdated] = useReducer(() => new Date(), null as Date | null);
   const [editor, dispatchEditor] = useReducer(templateEditorReducer, INITIAL_EDITOR_STATE);
+  const [templateSearch, setTemplateSearch] = useState('');
 
   const templatesQuery = useApiQuery<EmailTemplate[]>({
     cacheKey: CACHE_KEYS.TEMPLATES,
     endpoint: 'email-templates',
+    pagination: { offsetParameter: 'offset', pageSize: 100 },
     fallbackData: hadCache ? cachedTemplates : undefined,
     onSuccess: (templates) => {
       saveToCache(CACHE_KEYS.TEMPLATES, templates);
@@ -146,8 +149,26 @@ export function useTemplatesPage(): TemplatesPageController {
     await mutateTemplates();
   }, [mutateTemplates]);
 
-  const templateIds = useMemo(() => templates.map(({ id }) => id), [templates]);
+  const visibleTemplates = useMemo(
+    () => templates.filter((template) => matchesPageSearch(templateSearch, [
+      template.name,
+      template.description,
+      template.category,
+      template.subject_line,
+      template.template_type,
+    ])),
+    [templateSearch, templates],
+  );
+  const templateIds = useMemo(
+    () => visibleTemplates.map(({ id }) => id),
+    [visibleTemplates],
+  );
   const selection = useBulkSelection(templateIds);
+  const resetSelection = selection.reset;
+  const updateTemplateSearch = useCallback((value: string) => {
+    setTemplateSearch(value);
+    resetSelection();
+  }, [resetSelection]);
 
   const updateHtml = useCallback((html: string) => {
     dispatchEditor({
@@ -269,7 +290,7 @@ export function useTemplatesPage(): TemplatesPageController {
   }, [fetchIt]);
 
   return {
-    data: { templates },
+    data: { templates, visibleTemplates },
     status: {
       loading: templatesQuery.isValidating,
       lastUpdated,
@@ -289,6 +310,12 @@ export function useTemplatesPage(): TemplatesPageController {
       html: editor.previewHtml,
       show: (html) => dispatchEditor({ type: 'preview-opened', html }),
       close: () => dispatchEditor({ type: 'preview-closed' }),
+    },
+    search: {
+      value: templateSearch,
+      resultCount: visibleTemplates.length,
+      totalCount: templates.length,
+      setValue: updateTemplateSearch,
     },
     selection,
     actions: {

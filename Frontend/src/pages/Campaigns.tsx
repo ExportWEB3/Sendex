@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Header, Modal, StatusBadge, CampaignsSkeleton, CampaignForm, formatFileSize, getFileIcon, isImageType, SelectionBar } from '../components';
+import { Header, Modal, StatusBadge, CampaignsSkeleton, CampaignForm, formatFileSize, getFileIcon, isImageType, PageSearch, SelectionBar } from '../components';
 import { Plus, Play, Pause, XCircle, BarChart3, Users, ChevronLeft, ChevronRight, Search, CheckCircle2, Clock, AlertTriangle, Mail, MousePointerClick, Reply, X, Paperclip, Trash2, Pencil, Terminal, ListChecks, Eye } from 'lucide-react';
 import { useCampaignsPage } from '../features/campaigns/useCampaignsPage';
 import { sanitizeEmailHtml } from '../utils/sanitize-html';
@@ -14,7 +14,7 @@ import type {
 
 export function Campaigns() {
   const page = useCampaignsPage();
-  const { campaigns, lists, inboxes, smtpAccounts, templates } = page.data;
+  const { campaigns, visibleCampaigns, lists, inboxes, smtpAccounts, templates } = page.data;
   const { loading, initialLoad, lastUpdated, startingAll, pausingAll } = page.status;
   const {
     isOpen: showModal,
@@ -197,10 +197,19 @@ export function Campaigns() {
           </div>
         </div>
 
+        <PageSearch
+          value={page.search.value}
+          onChange={page.search.setValue}
+          placeholder="Search campaigns by name, subject, status, or sender..."
+          label="Search campaigns"
+          resultCount={page.search.resultCount}
+          totalCount={page.search.totalCount}
+        />
+
         {selectMode && (
           <SelectionBar
             count={selectedIds.size}
-            total={campaigns.length}
+            total={visibleCampaigns.length}
             onSelectAll={handleSelectAll}
             onDelete={handleBulkDelete}
             onCancel={toggleSelectMode}
@@ -216,7 +225,12 @@ export function Campaigns() {
               No campaigns yet. Create one to get started!
             </div>
           )}
-          {campaigns.map(campaign => {
+          {campaigns.length > 0 && visibleCampaigns.length === 0 && (
+            <div className="border border-gray-200 bg-white p-8 text-center text-gray-500">
+              No campaigns match your search.
+            </div>
+          )}
+          {visibleCampaigns.map(campaign => {
             const displayStatus = getDisplayStatus(campaign);
             const nextWindowText = formatNextWindow(campaign.next_window_open);
             return (

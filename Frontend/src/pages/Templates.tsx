@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { Plus, Edit2, Trash2, Eye, Save, Mail, Megaphone, UserCheck, Bell, Sparkles, Paperclip, RefreshCw, FileText, Image as ImageIcon, Film, X, Code, AlignLeft, ListChecks } from 'lucide-react';
-import { Header, Modal, SelectionBar } from '../components';
+import { Header, Modal, PageSearch, SelectionBar } from '../components';
 import { useTemplatesPage } from '../features/templates/useTemplatesPage';
 import { sanitizeEmailHtml } from '../utils/sanitize-html';
 
@@ -264,7 +264,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function Templates() {
   const page = useTemplatesPage();
-  const { templates } = page.data;
+  const { templates, visibleTemplates } = page.data;
   const { loading, lastUpdated } = page.status;
   const {
     editorOpen: showEditor,
@@ -374,10 +374,18 @@ export default function Templates() {
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
             Your Templates {templates.length > 0 && <span className="text-gray-400">({templates.length})</span>}
           </h2>
-          {selectMode && templates.length > 0 && (
+          <PageSearch
+            value={page.search.value}
+            onChange={page.search.setValue}
+            placeholder="Search saved templates..."
+            label="Search saved templates"
+            resultCount={page.search.resultCount}
+            totalCount={page.search.totalCount}
+          />
+          {selectMode && visibleTemplates.length > 0 && (
             <SelectionBar
               count={selectedIds.size}
-              total={templates.length}
+              total={visibleTemplates.length}
               onSelectAll={handleSelectAll}
               onDelete={handleBulkDelete}
               onCancel={toggleSelectMode}
@@ -389,9 +397,13 @@ export default function Templates() {
             <div className="bg-white rounded-xl shadow p-8 text-center text-gray-500">
               No saved templates yet. Pick a starter above or create one from scratch!
             </div>
+          ) : visibleTemplates.length === 0 ? (
+            <div className="border border-gray-200 bg-white p-8 text-center text-gray-500">
+              No templates match your search.
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {templates.map(t => (
+              {visibleTemplates.map(t => (
                 <div key={t.id} className="bg-white rounded-xl shadow p-5">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-start gap-2 flex-1 min-w-0">
