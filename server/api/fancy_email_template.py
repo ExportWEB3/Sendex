@@ -208,7 +208,10 @@ def list_templates(
     
     query = db.query(SESEmailTemplate).filter(
         SESEmailTemplate.user_id == effective_user_id
-    ).order_by(SESEmailTemplate.created_at.desc())
+    ).order_by(
+        SESEmailTemplate.created_at.desc(),
+        SESEmailTemplate.id.desc(),
+    )
     
     if category:
         query = query.filter(SESEmailTemplate.category == category)

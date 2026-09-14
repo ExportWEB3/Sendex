@@ -61,6 +61,9 @@ def get_lists(
     
     lists = db.query(RecipientList).filter(
         RecipientList.user_id == effective_user_id
+    ).order_by(
+        RecipientList.created_at.desc(),
+        RecipientList.id.desc(),
     ).offset(skip).limit(limit).all()
     
     return [
